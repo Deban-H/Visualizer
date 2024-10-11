@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+            margin: 20px;
+            border: 2px solid white;
+        }
+        .controls {
+            margin-bottom: 10px;
+        }
+        input[type="file"] {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Sound Visualizer</h1>
+<b1><b>Upload your file and enjoy the audio with its visuliazer bars</b></b1>
+<b1> <i>You can even merge songs or sounds by uploading 2 or more audio files simultaneously (when one song starts to play click the upload file box again and add another song)</i><b1>
+    <div class="controls">
+        <input type="file" id="audioUpload" accept="audio/*">
+    </div>
+    <canvas id="visualizer" width="800" height="400"></canvas>
+
+    <script>
+        const fileInput = document.getElementById('audioUpload');
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        let audioCtx, audioSrc, analyser;
+
+        fileInput.onchange = function() {
+            const audioFile = this.files[0];
+            const audio = new Audio(URL.createObjectURL(audioFile));
+            audio.controls = true;
+            document.body.appendChild(audio);
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+
+            audioSrc = audioCtx.createMediaElementSource(audio);
+            audioSrc.connect(analyser);
+            analyser.connect(audioCtx.destination);
+
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            audio.play();
+
+            function drawVisualizer() {
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+                analyser.getByteFrequencyData(dataArray);
+
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i];
+
+                    const r = barHeight + (25 * (i/bufferLength));
+                    const g = 250 * (i/bufferLength);
+                    const b = 50;
+
+                    canvasCtx.fillStyle = `rgb(${r},${g},${b})`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                    x += barWidth + 1;
+                }
+                requestAnimationFrame(drawVisualizer);
+            }
+
+            drawVisualizer();
+        };
+    </script>
+</body>
+</html>
